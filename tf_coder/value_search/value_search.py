@@ -291,7 +291,16 @@ def _record_solutions(value: value_module.Value,
     solution_expression_set.add(expression)
     solutions.append(Solution(value=value, expression=expression,
                               weight=weight, time=this_solution_time))
-    print('Found solution: {}'.format(expression))
+    #turn to pytorch
+    expression_copy = expression
+    expression_copy = check_string_for_torch_no_match(expression_copy)
+
+    if(expression_copy != "No Solution Found"):
+      expression_copy = check_string_for_torch_sub(expression_copy)
+
+    expression_copy = expression_copy.replace("tf", "torch")
+    print('Found solution: {}'.format(expression_copy))
+
     # Flush so the solutions appear in Colab immediately.
     sys.stdout.flush()
     if len(solutions) >= settings.max_solutions:
@@ -601,9 +610,18 @@ def run_value_search(
   total_time = timeit.default_timer() - start_time
 
   if solutions:
+    #turn to pytorch
+    expression_copy = solutions[0].expression
+    expression_copy = check_string_for_torch_no_match(expression_copy)
+
+    if(expression_copy != "No Solution Found"):
+      expression_copy = check_string_for_torch_sub(expression_copy)
+
+    expression_copy = expression_copy.replace("tf", "torch")
+    
     print()
     print('Solution was found in {:.1f} seconds:\n{}'.format(
-        solutions[0].time, solutions[0].expression))
+        solutions[0].time, expression_copy))
     if settings.max_solutions != 1:
       print('Found {} solution(s) in {:.1f} seconds total.'.format(
           len(solutions), total_time))
@@ -652,3 +670,134 @@ def run_value_search_from_example(
       source=source)
 
   return run_value_search(benchmark, settings, **kwargs)
+
+def check_string_for_torch_no_match(expression):
+# Check for tensorflow functions with no torch equivalent
+    if (expression.find("tf.add_n") != -1):
+      expression = "No Solution Found"
+      return expression
+    if (expression.find("tf.constant") != -1):
+      expression = "No Solution Found"
+      return expression
+    if (expression.find("tf.gather_nd") != -1):
+      expression = "No Solution Found"
+      return expression
+    if (expression.find("tf.math.divide_no_nan") != -1):
+      expression = "No Solution Found"
+      return expression
+    if (expression.find("tf.math.reciprical_no_nan") != -1):
+      expression = "No Solution Found"
+      return expression
+    if (expression.find("tf.math.segment") != -1):
+      expression = "No Solution Found"
+      return expression
+    if (expression.find("tf.math.squared_difference") != -1):
+      expression = "No Solution Found"
+      return expression
+    if (expression.find("tf.math.unsorted_segment") != -1):
+      expression = "No Solution Found"
+      return expression
+    if (expression.find("tf.scatter_nd") != -1):
+      expression = "No Solution Found"
+      return expression
+    if (expression.find("tf.sequence_mask")) != -1:
+      expression = "No Solution Found"
+      return expression
+    if (expression.find("tf.shape") != -1):
+      expression = "No Solution Found"
+      return expression
+    if (expression.find("tf.tensor_scatter") != -1):
+      expression = "No Solution Found"
+      return expression
+    if (expression.find("tf.transpose") != -1):
+      expression = "No Solution Found"
+      return expression
+    if (expression.find("tf.unique_with_counts") != -1):
+      expression = "No Solution Found"
+      return expression
+    if (expression.find("sparse") != -1):
+      expression = "No Solution Found"
+      return expression
+    if (expression.find("Sparse") != -1):
+      expression = "No Solution Found"
+      return expression
+    return expression
+
+def check_string_for_torch_sub(expression):
+# Match the tensorflow function to the torch function
+  if (expression.find("math.") != -1):
+      expression = expression.replace("math", "")
+  if (expression.find("tf.boolean_mask") != -1):
+      expression = expression.replace("tf.boolean_mask", "torch.masked_fill")
+      return expression
+  if (expression.find("tf.cast")) != -1:
+      expression = expression.replace("tf.cast", "torch.Tensor.type")
+      return expression
+  if (expression.find("tf.clip_by_value") != -1):
+      expression = expression.replace("tf.clip_by_value", "torch.clamp")
+      return expression
+  if (expression.find("tf.concat") != -1):
+      expression = expression.replace("tf.concat", "torch.cat")
+      return expression
+  if (expression.find("tf.divide") != -1):
+      expression = expression.replace("tf.divide", "torch.div")
+      return expression
+  if (expression.find("tf.equal") != -1):
+      expression = expression.replace("tf.equal", "torch.eq")
+      return expression
+  if (expression.find("tf.expand_dims") != -1):
+      expression = expression.replace("tf.expand_dims", "torch.expand")
+      return expression
+  if (expression.find("tf.fill") != -1):
+      expression = expression.replace("tf.fill", "torch.new_full")
+      return expression
+  if (expression.find("tf.greater") != -1):
+      expression = expression.replace("tf.greater", "torch.gt")
+      return expression
+  if (expression.find("tf.greater_equal") != -1):
+      expression = expression.replace("tf.greater_equal", "torch.ge")
+      return expression
+  if (expression.find("tf.negative") != -1):
+      expression = expression.replace("tf.negative", "torch.neg")
+      return expression
+  if (expression.find("tf.multiply") != -1):
+      expression = expression.replace("tf.multiply", "torch.mul")
+      return expression
+  if (expression.find("tf.not_equal") != -1):
+      expression = expression.replace("tf.not_equal", "torch.ne")
+      return expression
+  if (expression.find("tf.one_hot") != -1):
+      expression = expression.replace("tf.one_hot", "torch.nn.functional.one_hot")
+      return expression
+  if (expression.find("tf.pad") != -1):
+      expression = expression.replace("tf.pad", "torch.nn.functional.pad")
+      return expression
+  if (expression.find("tf.reduce_any") != -1):
+      expression = expression.replace("tf.reduce_any", "torch.any")
+      return expression
+  if (expression.find("tf.reduce_max") != -1):
+      expression = expression.replace("tf.reduce_max", "torch.distributed.ReduceOp.MAX")
+      return expression
+  if (expression.find("tf.reduce_mean") != -1):
+      expression = expression.replace("tf.reduce_mean", "torch.mean")
+      return expression
+  if (expression.find("tf.reduce_min") != -1):
+      expression = expression.replace("tf.reduce_min", "torch.distributed.ReduceOp.MIN")
+      return expression
+  if (expression.find("tf.reduce_prod") != -1):
+      expression = expression.replace("tf.reduce_prod", "torch.distributed.ReduceOp.PRODUCT")
+      return expression
+  if (expression.find("tf.reduce_sum") != -1):
+      expression = expression.replace("tf.reduce_sum", "torch.distributed.ReduceOp.SUM")
+      return expression
+  if (expression.find("tf.reverse") != -1):
+      expression = expression.replace("tf.reverse", "torch.flip")
+      return expression
+  if (expression.find("tf.subtract") != -1):
+      expression = expression.replace("tf.subtract", "torch.sub")
+      return expression
+  if (expression.find("tf.unstack") != -1):
+      expression = expression.replace("tf.unstack", "torch.unbind")
+      return expression
+  return expression
+
